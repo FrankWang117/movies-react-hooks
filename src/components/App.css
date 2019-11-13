@@ -19,6 +19,7 @@
 	box-sizing: border-box;
 }
 
+
 @media screen and (min-width: 694px) and (max-width: 915px) {
 	.movie {
 		max-width: 33%;
@@ -37,4 +38,19 @@
 		max-width: 100%;
 		margin: auto;
 	}
+}
+
+.App-header h2 {
+	margin: 0;
+}
+
+.movies {
+	display: flex;
+	flex-wrap: wrap;
+	flex-direction: row;
+}
+
+.movie {
+	padding: 5px 25px 10px 25px;
+	max-width: 25%;
 }

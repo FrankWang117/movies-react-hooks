@@ -3,7 +3,7 @@ import './App.css';
 import Header from './Header';
 import Movie from './Movie'
 
-const MOVIE_API_URL = "https://www.omdbapi.com/?s=man&apikey=4a3b711b";
+const MOVIE_API_URL = "https://www.omdbapi.com/?s=man&apikey=5abd63d1";
 
 function App() {
 	const [loading, setLoading] = useState(true);
@@ -12,18 +12,16 @@ function App() {
 
 	useEffect(() => {
 		fetch(MOVIE_API_URL)
-			// .then(response => response.join())
+			.then(response => response.json())
 			.then(jsonResponse => {
-				console.log(jsonResponse)
 				setMovies(jsonResponse.Search);
-				console.log(jsonResponse.Search)
 				setLoading(false);
 			});
 	}, []);
 
 	return (
 		<div className="App">
-			<Header text="Movie app" />
+			<Header text="Movie App" />
 			<div className="movies">
 				{loading && !errorMessage ? (<span>loading...</span>) :
 					errorMessage ? (<div className="errorMessage">{errorMessage}</div>) :

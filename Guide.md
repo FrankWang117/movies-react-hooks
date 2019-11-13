@@ -197,5 +197,167 @@ JavaScript 书写的差不多了我们在将样式添加上去:
 让我们去修改 `src/components/App.js`:
 
 ``` JavaScript
+import React, { useState, useEffect } from 'react';
+import './App.css';
+import Header from './Header';
+import Movie from './Movie'
 
+const MOVIE_API_URL = "https://www.omdbapi.com/?s=man&apikey=5abd63d1";
+
+function App() {
+	const [loading, setLoading] = useState(true);
+	const [movies, setMovies] = useState([]);
+	const [errorMessage, setErrorMessage] = useState(null);
+
+	useEffect(() => {
+		fetch(MOVIE_API_URL)
+			.then(response => response.json())
+			.then(jsonResponse => {
+				console.log(jsonResponse)
+				setMovies(jsonResponse.Search);
+				console.log(jsonResponse.Search)
+				setLoading(false);
+			});
+	}, []);
+
+	return (
+		<div className="App">
+			<Header text="Movie app" />
+			<div className="movies">
+				{loading && !errorMessage ? (<span>loading...</span>) :
+					errorMessage ? (<div className="errorMessage">{errorMessage}</div>) :
+						(movies.map((movie, index) => (
+							<Movie key={`${index}-${movie.Title}`} movie={movie} />
+						)))}
+			</div>
+			{/* <Movie /> */}
+		</div>
+	);
+}
+
+export default App;
+
+```  
+
+同时,我们修改样式:  
+
+``` css
+/* App.css*/
+/* ... */
+.App-header h2 {
+	margin: 0;
+}
+.movies {
+	display: flex;
+	flex-wrap: wrap;
+	flex-direction: row;
+}
+
+.movie {
+	padding: 5px 25px 10px 25px;
+	max-width: 25%;
+}
 ```
+
+我们可以看到在某个循环内部我们调用了 `Movie` 组件,并传递了 `movie` 属性.我们来修改上一步在 `movie` 组件内部写死的数据:  
+
+``` JavaScript
+import React from 'react';
+
+const DEFAULT_PLACEHOLDER_IMAGE = "https://m.media-amazon.com/images/M/MV5BMTczNTI2ODUwOF5BMl5BanBnXkFtZTcwMTU0NTIzMw@@._V1_SX300.jpg";
+
+const Movie = ({ movie }) => {
+	const poster = movie.Poster === "N/A" ? DEFAULT_PLACEHOLDER_IMAGE : movie.Poster;
+
+	return (
+		<div className="movie">
+			<h2>{movie.Title}</h2>
+			<div>
+				<img width="200" alt={`The movie titled: ${movie.Title}`}
+					src={poster} />
+			</div>
+			<p>({movie.Year})</p>
+
+		</div>
+	);
+};
+
+export default Movie;
+```  
+
+定义一个常量的意思是在电影(movie)没有海报时显示默认海报.  
+
+现在我们刷新页面,可以看到新的电影信息已经请求完毕.  
+
+让我们回到 `App.js` 文件,相信你也看到了我们使用了一些新的 `hooks`:`useState`以及 `useEffect`. 这也是我们这个 demo 所重点展示的内容,先来看看官网对 `hooks`以及这两个新 `hooks` 的介绍:  
+
+>Hook 是 React 16.8 的新增特性。它可以让你在不编写 class 的情况下使用 state 以及其他的 React 特性。
+>`useState` 通过在函数组件里调用它来给组件添加一些内部 state.`useState` 会返回一对值：当前状态和一个让你更新它的函数，你可以在事件处理函数中或其他一些地方调用这个函数。它类似 class 组件的 this.setState.
+>`useEffect` Effect Hook 可以让你在函数组件中执行副作用操作.如果你熟悉 React class 的生命周期函数，你可以把 useEffect Hook 看做 componentDidMount，componentDidUpdate 和 componentWillUnmount 这三个函数的组合。
+
+先来详细的说一下 `useState` :  
+接受唯一的一个参数,为初始 state.在上面的例子中我们可以看到:  
+
+``` JavaScript
+	const [loading, setLoading] = useState(true);
+	const [movies, setMovies] = useState([]);
+```  
+
+我们在一个函数组件中调用了两次 `useState` hook,第一次相当于我们定义了一个 loading state ,并将它的初始值设置为 `true`(`useState`的参数),并定义了更新此state 的 `setLoading` 方法.第二次同理. 现在我们使用等价的 class 示例来展示 `useState` hook的使用:  
+
+``` JavaScript
+// App.js
+import React, { useState, useEffect } from 'react';
+import './App.css';
+import Header from './Header';
+import Movie from './Movie'
+
+const MOVIE_API_URL = "https://www.omdbapi.com/?s=man&apikey=5abd63d1";
+
+class App extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = {
+			loading: true,
+			movies: [],
+			errorMessage: null
+		}
+	}
+	componentDidMount() {
+		fetch(MOVIE_API_URL)
+			.then(response => response.json())
+			.then(jsonResponse => {
+				this.setState({
+					movies: jsonResponse.Search,
+					loading: false
+				})
+			});
+	}
+	render() {
+		return (
+			<div className="App" >
+				<Header text="Movie App" />
+				<div className="movies">
+					{this.state.loading && !this.state.errorMessage ?
+						(<span>loading</span>) :
+						this.state.errorMessage ?
+							(<div className="errorMessage">
+								{this.state.errorMessage}
+							</div>) : (this.state.movies.map((movie, index) => (
+								<Movie key={`${index}-${movie.Title}`}
+									movie={movie} />
+							)))}
+				</div>
+			</div>
+		)
+	}
+
+}
+export default App;
+
+```  
+
+先主要看  `constructor` 函数中我们通过 `this.state` 定义了三个`state`: `loading`:负责页面的加载状态,`movies`用于存储请求来的电影数据,`errorMessage`:保存请求失败后的一些错误信息.并赋予了初始值.而后在 `componentDidMount` 声明周期函数中我们请求数据,并使用 `this.setState` 修改了我们定义的某些 `state`.  
+
+通过两者的比较,我们发现 `useState` hook 大大精简了我们设置 `state` 以及更新 `state` 的方式,而 `useEffect` 则是精简了我们在生命周期函数中重述书写某些逻辑的语句.  
+
