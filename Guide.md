@@ -1,6 +1,8 @@
 # movies-react-hooks  
 
->基于电影API,结合 Reactjs 的 hooks 功能,制作的 demo
+>基于电影API,结合 Reactjs 的 hooks 功能,制作的 demo.  
+> 参考文章 [how-to-build-a-movie-search-app-using-react-hooks](https://www.freecodecamp.org/news/how-to-build-a-movie-search-app-using-react-hooks-24eb72ddfaf7/),也能算得上一篇翻译吧,但是主要是根据文中的内容,自己实际来做了一个真正的 demo 出来,还是有一些扩展的.    
+
 
 ## 1 生成 app
 
@@ -359,5 +361,330 @@ export default App;
 
 先主要看  `constructor` 函数中我们通过 `this.state` 定义了三个`state`: `loading`:负责页面的加载状态,`movies`用于存储请求来的电影数据,`errorMessage`:保存请求失败后的一些错误信息.并赋予了初始值.而后在 `componentDidMount` 声明周期函数中我们请求数据,并使用 `this.setState` 修改了我们定义的某些 `state`.  
 
-通过两者的比较,我们发现 `useState` hook 大大精简了我们设置 `state` 以及更新 `state` 的方式,而 `useEffect` 则是精简了我们在生命周期函数中重述书写某些逻辑的语句.  
+通过两者的比较,我们发现 `useState` hook 大大精简了我们设置 `state` 以及更新 `state` 的方式,而 `useEffect` 则是精简了我们在生命周期函数中重述书写某些逻辑的语句.    
 
+我们下文还是会使用 `functional component`,`class component`仅仅作为 `hooks` 的写法比较.
+
+## 5. Search 组件
+
+让我们为此 demo 添加 `Search` 组件:  
+
+``` javascript
+// components/Search.js
+import React, { useState } from 'react';
+
+const Search = (props) => {
+	const [searchValue, setSearchValue] = useState("")
+
+	const handleSearchInputChanges = (e) => {
+		setSearchValue(e.target.value);
+	}
+	const resetInputField = () => {
+		setSearchValue("")
+	}
+	const callSearchFunction = () => {
+		e.preventDefault();
+		props.search(searchValue);
+		resetInputField();
+	}
+	return (
+		<form className="search">
+			<input
+				value={searchValue}
+				onChange={handleSearchInputChanges}
+				type="text"
+			/>
+			<input type="submit" onClick={callSearchFunction} value="SEARCH" />
+		</form>
+	)
+}
+
+export default Search;
+
+```  
+
+同时,修改 css 样式:  
+
+``` css
+
+/* App.css */
+.search {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	margin-top: 10px;
+}
+
+
+input[type="submit"] {
+	padding: 5px;
+	background-color: transparent;
+	color: black;
+	border: 1px solid black;
+	width: 80px;
+	margin-left: 5px;
+	cursor: pointer;
+}
+
+
+input[type="submit"]:hover {
+	background-color: #282c34;
+	color: antiquewhite;
+}
+
+
+.search>input[type="text"] {
+	width: 40%;
+	min-width: 170px;
+}
+```  
+
+为 `App.js` 添加相关逻辑:  
+
+``` JavaScript
+// App.js
+import React, { useState, useEffect } from 'react';
+import './App.css';
+import Header from './Header';
+import Movie from './Movie';
+import Search from './Search';	// new
+const MOVIE_API_URL = "https://www.omdbapi.com/?s=jackie&apikey=5abd63d1";
+
+function App() {
+	const [loading, setLoading] = useState(true);
+	const [movies, setMovies] = useState([]);
+	const [errorMessage, setErrorMessage] = useState(null);
+
+	useEffect(() => {
+		fetch(MOVIE_API_URL)
+			.then(response => response.json())
+			.then(jsonResponse => {
+				setMovies(jsonResponse.Search);
+				setLoading(false);
+			});
+	}, []);
+
+	// new function
+	const search = searchValue => {
+		setLoading(true);
+		setErrorMessage(null);
+		fetch(`https://www.omdbapi.com/?s=${searchValue}&apikey=5abd63d1`)
+			.then(res => res.json())
+			.then(jsonRes => {
+				if (jsonRes.Response === "True") {
+					setMovies(jsonRes.Search);
+				} else {
+					setErrorMessage(jsonRes.Error);
+				}
+				setLoading(false)
+			})
+	}
+	return (
+		<div className="App">
+			<Header text="Movie App" />
+			<Search search={search} />
+			<p className="App-intro">分享快乐,从电影开始</p>
+			<div className="movies">
+				{loading && !errorMessage ? (<span>loading...</span>) :
+					errorMessage ? (<div className="errorMessage">{errorMessage}</div>) :
+						(movies.map((movie, index) => (
+							<Movie key={`${index}-${movie.Title}`} movie={movie} />
+						)))}
+			</div>
+		</div>
+	);
+}
+
+export default App;
+
+```  
+
+包含 css 的调整,可以直接看 [源码地址](https://github.com/FrankWang1991/movies-react-hooks) .  
+
+这里主要说一下添加的一些东西.主要是 `Search` 组件的添加,以及点击 `SEAECH` 按钮时发送请求的逻辑,我们将逻辑请求放在的父组件中来做,这是基本的组件设计原则.因为另外一个子组件 `Movie` 需要用到我们请求返回的数据.  
+
+同样的,我们附上 `class component`版本的`App.js`:  
+
+``` JavaScript
+import React from 'react';
+import './App.css';
+import Header from './Header';
+import Movie from './Movie'
+import Search from "./Search";
+const MOVIE_API_URL = "https://www.omdbapi.com/?s=man&apikey=5abd63d1";
+
+class App extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = {
+			loading: true,
+			movies: [],
+			errorMessage: null
+		}
+		this.search = this.search.bind(this);
+	}
+	search(searchValue) {
+		console.log(this)
+		this.setState({
+			loading: true,
+			errorMessage: null
+		})
+		fetch(`https://www.omdbapi.com/?s=${searchValue}&apikey=5abd63d1`)
+			.then(res => res.json())
+			.then(jsonRes => {
+				if (jsonRes.Response === "True") {
+					this.setState({
+						loading: false,
+						movies: jsonRes.Search
+					})
+				} else {
+					this.setState({
+						loading: false,
+						errorMessage: jsonRes.Error
+					})
+				}
+			})
+	}
+	componentDidMount() {
+		fetch(MOVIE_API_URL)
+			.then(response => response.json())
+			.then(jsonResponse => {
+				this.setState({
+					movies: jsonResponse.Search,
+					loading: false
+				})
+			});
+	}
+	render() {
+		return (
+			<div className="App" >
+				<Header text="Movie App" />
+				<Search search={this.search} />
+				<div className="movies">
+					{this.state.loading && !this.state.errorMessage ?
+						(<span>loading</span>) :
+						this.state.errorMessage ?
+							(<div className="errorMessage">
+								{this.state.errorMessage}
+							</div>) : (this.state.movies.map((movie, index) => (
+								<Movie key={`${index}-${movie.Title}`}
+									movie={movie} />
+							)))}
+				</div>
+			</div>
+		)
+	}
+
+}
+export default App;
+
+```
+
+最大的不同也是事件处理需要绑定 `this`.  
+
+到这里应该说一个基本的 `hooks` 演示demo已经结束了,但是我们想更近一步,使用 `useReducer` 来替换 `useState` ,我们先来看看官方对 `useReducer`的定义:  
+> `const [state, dispatch] = useReducer(reducer, initialArg, init);`
+> useState 的替代方案。它接收一个形如 (state, action) => newState 的 reducer，并返回当前的 state 以及与其配套的 dispatch 方法。（如果你熟悉 Redux 的话，就已经知道它如何工作了。）
+
+> 在某些场景下，useReducer 会比 useState 更适用，例如 state 逻辑较复杂且包含多个子值，或者下一个 state 依赖于之前的 state 等。并且，使用 useReducer 还能给那些会触发深更新的组件做性能优化，因为你可以向子组件传递 dispatch 而不是回调函数 。  
+
+具体到本项目中的使用呢,就是:  
+
+``` JavaScript
+// App.js
+import React, { useReducer, useEffect } from 'react';
+import './App.css';
+import Header from './Header';
+import Movie from './Movie';
+import Search from './Search';
+const MOVIE_API_URL = "https://www.omdbapi.com/?s=jackie&apikey=5abd63d1";
+const initialState = {
+	loading: true,
+	movies: [],
+	errorMessage: null
+}
+function reducer(state, action) {
+	switch (action.type) {
+		case 'requesting':
+			return {
+				...state,
+				loading: true
+			};
+		case 'query_success':
+			return {
+				...state,
+				loading: false,
+				movies: action.movies
+			};
+		case 'query_error':
+			return {
+				...state,
+				loading: false,
+				errorMessage: action.error
+			};
+		default:
+			return state;
+	}
+}
+function App() {
+
+	const [state, dispatch] = useReducer(reducer, initialState);
+
+	useEffect(() => {
+		fetch(MOVIE_API_URL)
+			.then(response => response.json())
+			.then(jsonResponse => {
+				dispatch({
+					type: "query_success",
+					movies: jsonResponse.Search
+				})
+			});
+	}, []);
+
+	const search = searchValue => {
+		dispatch({
+			type: "requesting"
+		})
+		fetch(`https://www.omdbapi.com/?s=${searchValue}&apikey=5abd63d1`)
+			.then(res => res.json())
+			.then(jsonRes => {
+				if (jsonRes.Response === "True") {
+					dispatch({
+						type: "query_success",
+						movies: jsonRes.Search
+					})
+				} else {
+					dispatch({
+						type: "query_error",
+						error: jsonRes.Error
+					})
+				}
+			})
+	}
+	const { movies, loading, errorMessage } = state;
+	return (
+		<div className="App">
+			<Header text="Movie App" />
+			<Search search={search} />
+			<p className="App-intro">分享快乐,从电影开始</p>
+			<div className="movies">
+				{loading && !errorMessage ? (<span>loading...</span>) :
+					errorMessage ? (<div className="errorMessage">{errorMessage}</div>) :
+						(movies.map((movie, index) => (
+							<Movie key={`${index}-${movie.Title}`} movie={movie} />
+						)))}
+			</div>
+		</div>
+	);
+}
+
+export default App;
+```  
+
+对比使用 `useState` 和 `useReducer` 来看,逻辑会更加的清晰,还会有一些性能上的优化.  
+
+## 6. 总结
+
+基本上这个小小的 demo 到这里就结束了.  
+主要就是一些简单 hooks 的使用以及与 `class component`使用的一些代码上的区别.更多的 hooks 以及自定义 hooks 没有涉及到,这个在[官方文档](https://zh-hans.reactjs.org/docs/hooks-reference.html) 写的很详细,建议大家阅读.这里只是借花献佛的"抛砖引玉"一下.

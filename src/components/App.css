@@ -15,6 +15,15 @@
 	cursor: pointer;
 }
 
+.spinner {
+	height: 80px;
+	margin: auto;
+}
+
+.App-intro {
+	font-size: large;
+}
+
 * {
 	box-sizing: border-box;
 }
@@ -53,4 +62,51 @@
 .movie {
 	padding: 5px 25px 10px 25px;
 	max-width: 25%;
+}
+
+.errorMessage {
+	margin: auto;
+	font-weight: bold;
+	color: rgb(161, 15, 15);
+}
+
+.search {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	margin-top: 10px;
+}
+
+
+input[type="submit"] {
+	padding: 5px;
+	background-color: transparent;
+	color: black;
+	border: 1px solid black;
+	width: 80px;
+	margin-left: 5px;
+	cursor: pointer;
+}
+
+
+input[type="submit"]:hover {
+	background-color: #282c34;
+	color: antiquewhite;
+}
+
+
+.search>input[type="text"] {
+	width: 40%;
+	min-width: 170px;
+}
+
+.add-movies {
+	text-align: center;
+}
+
+.add-movies button {
+	font-size: 16px;
+	padding: 8px;
+	margin: 0 10px 30px 10px;
 }
